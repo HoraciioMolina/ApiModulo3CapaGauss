@@ -23,7 +23,7 @@ namespace MiWebApiM3.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<Autor>> Get()
         {
-            return context.Autores.ToList();
+            return context.Autores.Include(x => x.Libros).ToList();
         }
 
         [HttpGet("{id}", Name = "ObtenerAutor")]
