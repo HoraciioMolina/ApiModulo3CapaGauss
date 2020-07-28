@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,7 +14,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MiWebApiM3.Context;
+using MiWebApiM3.Entities;
 using MiWebApiM3.Helpers;
+using MiWebApiM3.Models;
 using MiWebApiM3.Services;
 
 namespace MiWebApiM3
@@ -30,6 +33,13 @@ namespace MiWebApiM3
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAutoMapper(configuration => 
+            {
+                configuration.CreateMap<Autor, AutorDTO>();
+                configuration.CreateMap<AutorCreacionDTO, Autor>().ReverseMap();
+                configuration.CreateMap<Libro, LibroDTO>();
+            },typeof(Startup));
+
             services.AddScoped<MiFiltroDeAccion>();
             services.AddResponseCaching();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

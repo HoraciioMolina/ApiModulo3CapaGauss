@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MiWebApiM3.Context;
 using MiWebApiM3.Entities;
 using MiWebApiM3.Helpers;
+using MiWebApiM3.Models;
 using MiWebApiM3.Services;
 using System;
 using System.Collections.Generic;
@@ -21,12 +24,14 @@ namespace MiWebApiM3.Controllers
         private readonly ApplicationDbContext context;
         private readonly ClaseB claseB;
         private readonly ILogger<AutoresController> logger;
+        private readonly IMapper mapper;
 
-        public AutoresController(ApplicationDbContext context, ClaseB claseB, ILogger<AutoresController> logger)
+        public AutoresController(ApplicationDbContext context, ClaseB claseB, ILogger<AutoresController> logger, IMapper mapper)
         {
             this.context = context;
             this.claseB = claseB;
             this.logger = logger;
+            this.mapper = mapper;
         }
 
 
@@ -35,16 +40,19 @@ namespace MiWebApiM3.Controllers
         [HttpGet("listado")]
         [HttpGet]
         [ServiceFilter(typeof(MiFiltroDeAccion))]
-        public ActionResult<IEnumerable<Autor>> Get()
+        public ActionResult<IEnumerable<AutorDTO>> Get()
         {
             //throw new NotImplementedException();
             logger.LogInformation("Obteniendo los autores");
             claseB.HacerAlgo();
-            return context.Autores.Include(li => li.Libros).ToList();
+            var autores = context.Autores.Include(li => li.Libros).ToList();
+            var autoresDTO = mapper.Map<List<AutorDTO>>(autores);
+
+            return autoresDTO;
         }
 
-        [HttpGet("{id}", Name = "ObtenerAutor")]
-        public async Task<ActionResult<Autor>> Get(int id)
+        [HttpGet("{id}", Name = "ObtenerAutor")] 
+        public async Task<ActionResult<AutorDTO>> Get(int id)
         {
             var autor = await context.Autores.FirstOrDefaultAsync(x => x.Id == id);
 
@@ -54,43 +62,74 @@ namespace MiWebApiM3.Controllers
                 return NotFound();
             }
 
-            return autor;
+            var autorDTO = mapper.Map<AutorDTO>(autor);
+
+            return autorDTO;
 
         }
 
         [HttpPost]
-        public ActionResult Post([FromBody] Autor autor)
+        public async Task<ActionResult> Post([FromBody] AutorCreacionDTO autorCreacion)
         {
-            TryValidateModel(autor);
-            context.Autores.Add(autor);
-            context.SaveChanges();
+            var autor = mapper.Map<Autor>(autorCreacion);
 
-            return new CreatedAtRouteResult("ObtenerAutor", new { id = autor.Id}, autor);
+            TryValidateModel(autor);
+            context.Add(autor);
+            await context.SaveChangesAsync();
+
+            var autorDTO = mapper.Map<AutorDTO>(autor);
+
+            return new CreatedAtRouteResult("ObtenerAutor", new { id = autor.Id}, autorDTO);
         }
 
         [HttpPut("{id}")]
-        public ActionResult Put(int id, [FromBody] Autor value)
+        public async Task<ActionResult> Put(int id, [FromBody] AutorCreacionDTO autorActualizacion)
         {
-            if (id != value.Id)
+            var autor = mapper.Map<Autor>(autorActualizacion);
+            autor.Id = id;
+            context.Entry(autor).State = EntityState.Modified;
+            await context.SaveChangesAsync();
+            return NoContent();
+        } 
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<AutorCreacionDTO> patchDocument)
+        {
+            if (patchDocument == null)
                 return BadRequest();
 
-            context.Entry(value).State = EntityState.Modified;
-            context.SaveChanges();
-            return Ok();
+            var autorDeLaDB = await context.Autores.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (autorDeLaDB == null)
+                return NotFound();
+
+            var autorDTO = mapper.Map<AutorCreacionDTO>(autorDeLaDB);
+
+            patchDocument.ApplyTo(autorDTO, ModelState);
+
+            mapper.Map(autorDTO, autorDeLaDB);
+
+            var isValid = TryValidateModel(autorDeLaDB);
+
+            if (!isValid)
+                return BadRequest(ModelState);
+
+            await context.SaveChangesAsync();
+            return NoContent();
         }
 
 
         [HttpDelete("{id}")]
-        public ActionResult<Autor> Delete(int id)
+        public async Task<ActionResult<Autor>> Delete(int id)
         {
-            var autor = context.Autores.FirstOrDefault(x => x.Id == id);
+            var autorId = await context.Autores.Select(i => i.Id).FirstOrDefaultAsync(x => x == id);
 
-            if (autor == null)
+            if (autorId == default(int))
                 return NotFound();
 
-            context.Autores.Remove(autor);
-            context.SaveChanges();
-            return autor;
+            context.Remove(new Autor { Id = autorId });
+            await context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

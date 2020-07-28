@@ -19,6 +19,8 @@ namespace MiWebApiM3.Entities
         [Range(18, 120)]
         public int Edad { get; set; }
 
+        public string Identificacion { get; set; }
+
         //[CreditCard]
         public string CreditCard { get; set; }
 
