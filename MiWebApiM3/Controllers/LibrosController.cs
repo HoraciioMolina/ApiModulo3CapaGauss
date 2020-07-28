@@ -23,13 +23,13 @@ namespace MiWebApiM3.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<Libro>> Get()
         {
-            return context.Libros.Include(x => x.Autor).ToList();
+            return context.Libros.Include(au => au.Autor).ToList();
         }
 
         [HttpGet("{id}", Name="ObtenerLibro")]
         public ActionResult<Libro> Get(int id)
         {
-            var libro = context.Libros.Include(x => x.Autor).FirstOrDefault(x => x.Id == id);
+            var libro = context.Libros.Include(au => au.Autor).FirstOrDefault(x => x.Id == id);
 
             if (libro == null)
                 return NotFound();
