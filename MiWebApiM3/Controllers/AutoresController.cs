@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,7 @@ namespace MiWebApiM3.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("PermitirApiRequest")]
     //[Authorize]
     public class AutoresController : ControllerBase
     {
@@ -52,6 +55,7 @@ namespace MiWebApiM3.Controllers
         }
 
         [HttpGet("{id}", Name = "ObtenerAutor")] 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin")]
         public async Task<ActionResult<AutorDTO>> Get(int id)
         {
             var autor = await context.Autores.FirstOrDefaultAsync(x => x.Id == id);
