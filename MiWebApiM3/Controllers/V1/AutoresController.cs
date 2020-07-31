@@ -16,9 +16,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MiWebApiM3.Controllers
+namespace MiWebApiM3.Controllers.V1
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     [EnableCors("PermitirApiRequest")]
     //[Authorize]
@@ -43,12 +43,23 @@ namespace MiWebApiM3.Controllers
         [HttpGet("listado")]
         [HttpGet]
         [ServiceFilter(typeof(MiFiltroDeAccion))]
-        public ActionResult<IEnumerable<AutorDTO>> Get()
+        public async Task<ActionResult<IEnumerable<AutorDTO>>> Get(int numeroDePagina = 1, int cantidadDeRegistros = 10)
         {
-            //throw new NotImplementedException();
+            var query = context.Autores.Include(li => li.Libros).AsQueryable();
+
+            var totalDeRegistros = query.Count();
+
             logger.LogInformation("Obteniendo los autores");
             claseB.HacerAlgo();
-            var autores = context.Autores.Include(li => li.Libros).ToList();
+            var autores = await query
+                .Skip(cantidadDeRegistros * (numeroDePagina - 1))
+                .Take(cantidadDeRegistros)
+                .ToListAsync();
+
+            Response.Headers["X-Total-Registros"] = totalDeRegistros.ToString();
+            Response.Headers["X-Cantidad-Paginas"] =
+                ((int)Math.Ceiling((double)totalDeRegistros / cantidadDeRegistros)).ToString();
+
             var autoresDTO = mapper.Map<List<AutorDTO>>(autores);
 
             return autoresDTO;
@@ -123,6 +134,10 @@ namespace MiWebApiM3.Controllers
         }
 
 
+        /// <summary>
+        /// Borra un elemento en específico
+        /// </summary>
+        /// <param name="id">Id del elemento a borrar</param>  
         [HttpDelete("{id}")]
         public async Task<ActionResult<Autor>> Delete(int id)
         {

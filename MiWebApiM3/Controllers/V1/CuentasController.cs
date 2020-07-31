@@ -10,9 +10,9 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiWebApiM3.Controllers
+namespace MiWebApiM3.Controllers.V1
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class CuentasController : ControllerBase
     {
